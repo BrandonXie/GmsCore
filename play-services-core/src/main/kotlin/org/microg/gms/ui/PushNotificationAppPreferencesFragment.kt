@@ -2,9 +2,11 @@
  * SPDX-FileCopyrightText: 2020, microG Project Team
  * SPDX-License-Identifier: Apache-2.0
  */
+@file:Suppress("DEPRECATION")
 
 package org.microg.gms.ui
 
+import android.annotation.SuppressLint
 import android.os.Bundle
 import android.text.format.DateUtils
 import androidx.appcompat.app.AlertDialog
@@ -13,7 +15,7 @@ import androidx.preference.Preference
 import androidx.preference.PreferenceCategory
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.TwoStatePreference
-import com.google.android.gms.R
+import com.mgoogle.android.gms.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.microg.gms.gcm.GcmDatabase
@@ -39,6 +41,7 @@ class PushNotificationAppPreferencesFragment : PreferenceFragmentCompat() {
         database = GcmDatabase(context)
     }
 
+    @SuppressLint("RestrictedApi")
     override fun onBindPreferences() {
         wakeForDelivery = preferenceScreen.findPreference("pref_push_app_wake_for_delivery") ?: wakeForDelivery
         allowRegister = preferenceScreen.findPreference("pref_push_app_allow_register") ?: allowRegister

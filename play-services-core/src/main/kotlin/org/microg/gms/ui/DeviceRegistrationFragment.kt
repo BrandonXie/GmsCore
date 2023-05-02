@@ -11,8 +11,8 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
-import com.google.android.gms.R
-import com.google.android.gms.databinding.DeviceRegistrationFragmentBinding
+import com.mgoogle.android.gms.R
+import com.mgoogle.android.gms.databinding.DeviceRegistrationFragmentBinding
 import org.microg.gms.checkin.ServiceInfo
 import org.microg.gms.checkin.getCheckinServiceInfo
 import org.microg.gms.checkin.setCheckinServiceConfiguration
@@ -43,6 +43,7 @@ class DeviceRegistrationFragment : Fragment(R.layout.device_registration_fragmen
     private fun displayServiceInfo(serviceInfo: ServiceInfo) {
         binding.checkinEnabled = serviceInfo.configuration.enabled
     }
+
 
     override fun onResume() {
         super.onResume()

@@ -16,62 +16,6 @@
 
 package org.microg.gms.gcm;
 
-import android.app.AlarmManager;
-import android.app.PendingIntent;
-import android.app.Service;
-import android.content.ComponentName;
-import android.content.Context;
-import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.content.pm.PermissionInfo;
-import android.content.pm.ResolveInfo;
-import android.net.ConnectivityManager;
-import android.os.Build;
-import android.os.Bundle;
-import android.os.Handler;
-import android.os.IBinder;
-import android.os.Looper;
-import android.os.Messenger;
-import android.os.Parcelable;
-import android.os.PowerManager;
-import android.os.SystemClock;
-import android.os.UserHandle;
-import android.util.Log;
-
-import androidx.legacy.content.WakefulBroadcastReceiver;
-
-import com.google.android.gms.R;
-import com.squareup.wire.Message;
-
-import org.microg.gms.checkin.LastCheckinInfo;
-import org.microg.gms.common.ForegroundServiceContext;
-import org.microg.gms.common.ForegroundServiceInfo;
-import org.microg.gms.common.PackageUtils;
-import org.microg.gms.gcm.mcs.AppData;
-import org.microg.gms.gcm.mcs.Close;
-import org.microg.gms.gcm.mcs.DataMessageStanza;
-import org.microg.gms.gcm.mcs.Extension;
-import org.microg.gms.gcm.mcs.HeartbeatAck;
-import org.microg.gms.gcm.mcs.HeartbeatPing;
-import org.microg.gms.gcm.mcs.IqStanza;
-import org.microg.gms.gcm.mcs.LoginRequest;
-import org.microg.gms.gcm.mcs.LoginResponse;
-import org.microg.gms.gcm.mcs.Setting;
-
-import java.io.Closeable;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.net.Socket;
-import java.net.SocketException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import javax.net.ssl.SSLContext;
-
-import okio.ByteString;
-
 import static android.app.AlarmManager.ELAPSED_REALTIME_WAKEUP;
 import static android.os.Build.VERSION.SDK_INT;
 import static org.microg.gms.common.PackageUtils.warnIfNotPersistentProcess;
@@ -110,6 +54,66 @@ import static org.microg.gms.gcm.McsConstants.MSG_OUTPUT_ERROR;
 import static org.microg.gms.gcm.McsConstants.MSG_OUTPUT_READY;
 import static org.microg.gms.gcm.McsConstants.MSG_TEARDOWN;
 
+import android.annotation.SuppressLint;
+import android.app.AlarmManager;
+import android.app.PendingIntent;
+import android.app.Service;
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.content.pm.PermissionInfo;
+import android.content.pm.ResolveInfo;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+import android.os.Build;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.IBinder;
+import android.os.Looper;
+import android.os.Messenger;
+import android.os.Parcelable;
+import android.os.PowerManager;
+import android.os.SystemClock;
+import android.os.UserHandle;
+import android.util.Log;
+
+import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
+import androidx.legacy.content.WakefulBroadcastReceiver;
+
+import com.mgoogle.android.gms.R;
+import com.squareup.wire.Message;
+
+import org.microg.gms.checkin.LastCheckinInfo;
+import org.microg.gms.common.ForegroundServiceContext;
+import org.microg.gms.common.ForegroundServiceInfo;
+import org.microg.gms.common.PackageUtils;
+import org.microg.gms.gcm.mcs.AppData;
+import org.microg.gms.gcm.mcs.Close;
+import org.microg.gms.gcm.mcs.DataMessageStanza;
+import org.microg.gms.gcm.mcs.Extension;
+import org.microg.gms.gcm.mcs.HeartbeatAck;
+import org.microg.gms.gcm.mcs.HeartbeatPing;
+import org.microg.gms.gcm.mcs.IqStanza;
+import org.microg.gms.gcm.mcs.LoginRequest;
+import org.microg.gms.gcm.mcs.LoginResponse;
+import org.microg.gms.gcm.mcs.Setting;
+
+import java.io.Closeable;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.net.Socket;
+import java.net.SocketException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import javax.net.ssl.SSLContext;
+
+import okio.ByteString;
+
 @ForegroundServiceInfo(value = "Cloud messaging", res = R.string.service_name_mcs)
 public class McsService extends Service implements Handler.Callback {
     private static final String TAG = "GmsGcmMcsSvc";
@@ -119,15 +123,23 @@ public class McsService extends Service implements Handler.Callback {
     public static final String FROM_FIELD = "gcm@android.com";
 
     public static final String SERVICE_HOST = "mtalk.google.com";
+    // A few ports are available: 443, 5228-5230 but also 5222-5223
+    // See https://github.com/microg/GmsCore/issues/408
     public static final int SERVICE_PORT = 5228;
+    // Likely if the main port 5228 is blocked by a firewall, the other 52xx are blocked as well
+    public static final int SERVICE_PORT_FALLBACK = 443;
 
     private static final int WAKELOCK_TIMEOUT = 5000;
+    // On bad mobile network a ping can take >60s, so we wait for an ACK for 90s
+    private static final int HEARTBEAT_ACK_AFTER_PING_TIMEOUT_MS = 90000;
 
+    private static long lastHeartbeatPingElapsedRealtime = -1;
     private static long lastHeartbeatAckElapsedRealtime = -1;
     private static long lastIncomingNetworkRealtime = 0;
     private static long startTimestamp = 0;
     public static String activeNetworkPref = null;
-    private AtomicInteger nextMessageId = new AtomicInteger(0x1000000);
+    private boolean wasTornDown = false;
+    private final AtomicInteger nextMessageId = new AtomicInteger(0x1000000);
 
     private static Socket sslSocket;
     private static McsInputStream inputStream;
@@ -148,11 +160,20 @@ public class McsService extends Service implements Handler.Callback {
 
     private Intent connectIntent;
 
-    private static int maxTtl = 24 * 60 * 60;
+    private static final int maxTtl = 24 * 60 * 60;
 
-    private Object deviceIdleController;
+    @Nullable
     private Method getUserIdMethod;
+    @Nullable
+    private Object deviceIdleController;
+    @Nullable
     private Method addPowerSaveTempWhitelistAppMethod;
+    @Nullable
+    @RequiresApi(Build.VERSION_CODES.S)
+    private Object powerExemptionManager;
+    @Nullable
+    @RequiresApi(Build.VERSION_CODES.S)
+    private Method addToTemporaryAllowListMethod;
 
     private class HandlerThread extends Thread {
 
@@ -181,6 +202,7 @@ public class McsService extends Service implements Handler.Callback {
     }
 
     @Override
+    @SuppressLint("PrivateApi")
     public void onCreate() {
         super.onCreate();
         TriggerReceiver.register(this);
@@ -190,20 +212,27 @@ public class McsService extends Service implements Handler.Callback {
         powerManager = (PowerManager) getSystemService(POWER_SERVICE);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && checkSelfPermission("android.permission.CHANGE_DEVICE_IDLE_TEMP_WHITELIST") == PackageManager.PERMISSION_GRANTED) {
             try {
-                String deviceIdleControllerName = "deviceidle";
-                try {
-                    Field field = Context.class.getField("DEVICE_IDLE_CONTROLLER");
-                    deviceIdleControllerName = (String) field.get(null);
-                } catch (Exception ignored) {
-                }
-                IBinder binder = (IBinder) Class.forName("android.os.ServiceManager")
-                        .getMethod("getService", String.class).invoke(null, deviceIdleControllerName);
-                if (binder != null) {
-                    deviceIdleController = Class.forName("android.os.IDeviceIdleController$Stub")
-                            .getMethod("asInterface", IBinder.class).invoke(null, binder);
-                    getUserIdMethod = UserHandle.class.getMethod("getUserId", int.class);
-                    addPowerSaveTempWhitelistAppMethod = deviceIdleController.getClass()
-                            .getMethod("addPowerSaveTempWhitelistApp", String.class, long.class, int.class, String.class);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    Class<?> powerExemptionManagerClass = Class.forName("android.os.PowerExemptionManager");
+                    powerExemptionManager = getSystemService(powerExemptionManagerClass);
+                    addToTemporaryAllowListMethod =
+                            powerExemptionManagerClass.getMethod("addToTemporaryAllowList", String.class, int.class, String.class, long.class);
+                } else {
+                    String deviceIdleControllerName = "deviceidle";
+                    try {
+                        Field field = Context.class.getField("DEVICE_IDLE_CONTROLLER");
+                        deviceIdleControllerName = (String) field.get(null);
+                    } catch (Exception ignored) {
+                    }
+                    IBinder binder = (IBinder) Class.forName("android.os.ServiceManager")
+                            .getMethod("getService", String.class).invoke(null, deviceIdleControllerName);
+                    if (binder != null) {
+                        deviceIdleController = Class.forName("android.os.IDeviceIdleController$Stub")
+                                .getMethod("asInterface", IBinder.class).invoke(null, binder);
+                        getUserIdMethod = UserHandle.class.getMethod("getUserId", int.class);
+                        addPowerSaveTempWhitelistAppMethod = deviceIdleController.getClass()
+                                .getMethod("addPowerSaveTempWhitelistApp", String.class, long.class, int.class, String.class);
+                    }
                 }
             } catch (Exception e) {
                 Log.w(TAG, e);
@@ -242,15 +271,20 @@ public class McsService extends Service implements Handler.Callback {
             logd(null, "Connection is not enabled or dead.");
             return false;
         }
-        // consider connection to be dead if we did not receive an ack within twice the heartbeat interval
+        // consider connection to be dead if we did not receive an ack within 90s to our ping
         int heartbeatMs = GcmPrefs.get(context).getHeartbeatMsFor(activeNetworkPref);
         // if disabled for active network, heartbeatMs will be -1
         if (heartbeatMs < 0) {
             closeAll();
-        } else if (SystemClock.elapsedRealtime() - lastHeartbeatAckElapsedRealtime > 2L * heartbeatMs) {
-            logd(null, "No heartbeat for " + (SystemClock.elapsedRealtime() - lastHeartbeatAckElapsedRealtime) / 1000 + " seconds, connection assumed to be dead after " + 2 * heartbeatMs / 1000 + " seconds");
-            GcmPrefs.get(context).learnTimeout(context, activeNetworkPref);
             return false;
+        } else {
+            boolean noAckReceived = lastHeartbeatAckElapsedRealtime < lastHeartbeatPingElapsedRealtime;
+            long timeSinceLastPing = SystemClock.elapsedRealtime() - lastHeartbeatPingElapsedRealtime;
+            if (noAckReceived && timeSinceLastPing > HEARTBEAT_ACK_AFTER_PING_TIMEOUT_MS) {
+                logd(null, "No heartbeat for " + timeSinceLastPing / 1000 + "s, connection assumed to be dead after 90s");
+                GcmPrefs.get(context).learnTimeout(context, activeNetworkPref);
+                return false;
+            }
         }
         return true;
     }
@@ -296,8 +330,8 @@ public class McsService extends Service implements Handler.Callback {
 
     public synchronized static long getCurrentDelay() {
         long delay = currentDelay == 0 ? 5000 : currentDelay;
-        if (currentDelay < 60000) currentDelay += 10000;
-        if (currentDelay >= 60000 && currentDelay < 600000) currentDelay += 60000;
+        if (currentDelay < GcmPrefs.INTERVAL) currentDelay += 10000;
+        if (currentDelay >= GcmPrefs.INTERVAL && currentDelay < 600000) currentDelay += GcmPrefs.INTERVAL;
         return delay;
     }
 
@@ -430,34 +464,49 @@ public class McsService extends Service implements Handler.Callback {
         }
     }
 
-    private synchronized void connect() {
+    private boolean connect(int port) {
         try {
-            closeAll();
-            ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-            activeNetworkPref = GcmPrefs.get(this).getNetworkPrefForInfo(cm.getActiveNetworkInfo());
-            if (!GcmPrefs.get(this).isEnabledFor(cm.getActiveNetworkInfo())) {
-                scheduleReconnect(this);
-                return;
-            }
+            wasTornDown = false;
 
-            logd(this, "Starting MCS connection...");
-            Socket socket = new Socket(SERVICE_HOST, SERVICE_PORT);
-            logd(this, "Connected to " + SERVICE_HOST + ":" + SERVICE_PORT);
-            sslSocket = SSLContext.getDefault().getSocketFactory().createSocket(socket, SERVICE_HOST, SERVICE_PORT, true);
-            logd(this, "Activated SSL with " + SERVICE_HOST + ":" + SERVICE_PORT);
+            logd(this, "Starting MCS connection to port " + port + "...");
+            Socket socket = new Socket(SERVICE_HOST, port);
+            logd(this, "Connected to " + SERVICE_HOST + ":" + port);
+            sslSocket = SSLContext.getDefault().getSocketFactory().createSocket(socket, SERVICE_HOST, port, true);
+            logd(this, "Activated SSL with " + SERVICE_HOST + ":" + port);
             inputStream = new McsInputStream(sslSocket.getInputStream(), rootHandler);
             outputStream = new McsOutputStream(sslSocket.getOutputStream(), rootHandler);
             inputStream.start();
             outputStream.start();
 
             startTimestamp = System.currentTimeMillis();
+            lastHeartbeatPingElapsedRealtime = SystemClock.elapsedRealtime();
             lastHeartbeatAckElapsedRealtime = SystemClock.elapsedRealtime();
             lastIncomingNetworkRealtime = SystemClock.elapsedRealtime();
             scheduleHeartbeat(this);
         } catch (Exception e) {
-            Log.w(TAG, "Exception while connecting!", e);
+            Log.w(TAG, "Exception while connecting to " + SERVICE_HOST + ":" + port, e);
             rootHandler.sendMessage(rootHandler.obtainMessage(MSG_TEARDOWN, e));
+            closeAll();
+            return false;
         }
+
+        return true;
+    }
+
+    private synchronized void connect() {
+        closeAll();
+
+        ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo activeNetworkInfo = cm.getActiveNetworkInfo();
+        activeNetworkPref = GcmPrefs.get(this).getNetworkPrefForInfo(activeNetworkInfo);
+        if (!GcmPrefs.get(this).isEnabledFor(activeNetworkInfo)) {
+            logd(this, "Don't connect, because disabled for " + activeNetworkInfo.getTypeName());
+            scheduleReconnect(this);
+            return;
+        }
+
+        if (!connect(SERVICE_PORT))
+            connect(SERVICE_PORT_FALLBACK);
     }
 
     private void handleClose(Close close) {
@@ -580,7 +629,16 @@ public class McsService extends Service implements Handler.Callback {
     }
 
     private void addPowerSaveTempWhitelistApp(String packageName) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            try {
+                if (addToTemporaryAllowListMethod != null && powerExemptionManager != null) {
+                    logd(this, "Adding app " + packageName + " to the temp allowlist");
+                    addToTemporaryAllowListMethod.invoke(powerExemptionManager, packageName, 0, "GCM Push", 10000);
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error adding app" + packageName + " to the temp allowlist.", e);
+            }
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             try {
                 if (getUserIdMethod != null && addPowerSaveTempWhitelistAppMethod != null && deviceIdleController != null) {
                     int userId = (int) getUserIdMethod.invoke(null, getPackageManager().getApplicationInfo(packageName, 0).uid);
@@ -662,6 +720,7 @@ public class McsService extends Service implements Handler.Callback {
                         ping.last_stream_id_received(inputStream.getStreamId());
                     }
                     send(MCS_HEARTBEAT_PING_TAG, ping.build());
+                    lastHeartbeatPingElapsedRealtime = SystemClock.elapsedRealtime();
                     scheduleHeartbeat(this);
                 } else {
                     logd(this, "Ignoring heartbeat, not connected!");
@@ -692,16 +751,13 @@ public class McsService extends Service implements Handler.Callback {
                 handleOutputDone(msg);
                 return true;
         }
-        Log.w(TAG, "Unknown message: " + msg);
+        Log.w(TAG, "Unknown message (" + msg.what + "): " + msg);
         return false;
     }
 
     private void handleOutputDone(android.os.Message msg) {
-        switch (msg.arg1) {
-            case MCS_HEARTBEAT_PING_TAG:
-                wakeLock.release();
-                break;
-            default:
+        if (msg.arg1 == MCS_HEARTBEAT_PING_TAG) {
+            wakeLock.release();
         }
     }
 
@@ -729,6 +785,7 @@ public class McsService extends Service implements Handler.Callback {
             resetCurrentDelay();
             lastIncomingNetworkRealtime = SystemClock.elapsedRealtime();
         } catch (Exception e) {
+            Log.w(TAG, "Exception when handling input: " + message, e);
             rootHandler.sendMessage(rootHandler.obtainMessage(MSG_TEARDOWN, e));
         }
     }
@@ -743,6 +800,7 @@ public class McsService extends Service implements Handler.Callback {
     }
 
     private static void closeAll() {
+        logd(null, "Closing all sockets...");
         tryClose(inputStream);
         tryClose(outputStream);
         if (sslSocket != null) {
@@ -754,6 +812,14 @@ public class McsService extends Service implements Handler.Callback {
     }
 
     private void handleTeardown(android.os.Message msg) {
+        if (wasTornDown) {
+            // This can get called multiple times from different places via MSG_TEARDOWN
+            // this causes the reconnect delay to increase with each call to scheduleReconnect(),
+            // increasing the time we are disconnected.
+            logd(this, "Was torn down already, not doing it again");
+            return;
+        }
+        wasTornDown = true;
         closeAll();
 
         scheduleReconnect(this);

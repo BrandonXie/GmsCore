@@ -15,15 +15,12 @@
  */
 
 apply plugin: 'com.android.library'
-apply plugin: 'maven-publish'
-apply plugin: 'signing'
 
 android {
     compileSdkVersion androidCompileSdk
-    buildToolsVersion "$androidBuildVersionTools"
+    buildToolsVersion "30.0.3"
 
     defaultConfig {
-        versionName version
         minSdkVersion androidMinSdk
         targetSdkVersion androidTargetSdk
     }
@@ -34,14 +31,13 @@ android {
     }
 }
 
-apply from: '../gradle/publish-android.gradle'
-
-description = 'microG implementation of play-services-base'
-
 dependencies {
+    implementation 'com.google.android.gms:play-services-base:18.0.1'
+    
     api project(':play-services-basement')
     api project(':play-services-tasks')
     api project(':play-services-base-api')
 
-    implementation "androidx.fragment:fragment:$fragmentVersion"
+    implementation 'androidx.fragment:fragment:1.4.1'
+    implementation 'com.google.android.gms:play-services-base:18.0.1'
 }

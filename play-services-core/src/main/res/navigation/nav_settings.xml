@@ -2,43 +2,17 @@
 <navigation xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/nav_settings"
     app:startDestination="@id/settingsFragment">
 
     <fragment
         android:id="@+id/settingsFragment"
         android:name="org.microg.gms.ui.SettingsFragment"
         android:label="@string/gms_settings_name">
-        <action
-            android:id="@+id/openUnifiedNlpSettings"
-            app:destination="@id/nav_unlp" />
-        <action
-            android:id="@+id/openSelfcheck"
-            app:destination="@id/selfcheckFragment" />
-        <action
-            android:id="@+id/openCheckinSettings"
-            app:destination="@id/checkinFragment" />
-        <action
-            android:id="@+id/openGcmSettings"
-            app:destination="@id/gcmFragment" />
-        <action
-            android:id="@+id/openSafetyNetSettings"
-            app:destination="@id/safetyNetFragment" />
-        <action
-            android:id="@+id/openMoreGoogleSettings"
-            app:destination="@id/googleMoreFragment" />
-        <action
-            android:id="@+id/openExposureNotificationSettings"
-            app:destination="@id/nav_nearby" />
-        <action
-            android:id="@+id/openAbout"
-            app:destination="@id/aboutFragment" />
+        <action android:id="@+id/openCheckinSettings" app:destination="@id/checkinFragment" />
+        <action android:id="@+id/openGcmSettings" app:destination="@id/gcmFragment" />
+        <action android:id="@+id/openAbout" app:destination="@id/aboutFragment" />
     </fragment>
 
-    <fragment
-        android:id="@+id/selfcheckFragment"
-        android:name="org.microg.gms.ui.SelfCheckFragment"
-        android:label="@string/self_check_title" />
     <fragment
         android:id="@+id/checkinFragment"
         android:name="org.microg.gms.ui.DeviceRegistrationFragment"
@@ -62,7 +36,7 @@
     <fragment
         android:id="@+id/gcmAllAppsFragment"
         android:name="org.microg.gms.ui.PushNotificationAllAppsFragment"
-        android:label="@string/prefcat_push_apps_title">
+        android:label="Apps using push notifications">
         <action
             android:id="@+id/openGcmAppDetailsFromAll"
             app:destination="@id/gcmAppFragment" />
@@ -80,31 +54,9 @@
         android:id="@+id/gcmAdvancedFragment"
         android:name="org.microg.gms.ui.PushNotificationAdvancedFragment"
         android:label="@string/service_name_mcs" />
-    <fragment
-        android:id="@+id/safetyNetFragment"
-        android:name="org.microg.gms.ui.SafetyNetFragment"
-        android:label="@string/service_name_snet"
-        tools:layout="@layout/safety_net_fragment">
-        <action
-            android:id="@+id/openSafetyNetAdvancedSettings"
-            app:destination="@id/safetyNetAdvancedFragment" />
-    </fragment>
-    <fragment
-        android:id="@+id/safetyNetAdvancedFragment"
-        android:name="org.microg.gms.ui.SafetyNetAdvancedFragment"
-        android:label="@string/service_name_snet" />
-
-    <fragment
-        android:id="@+id/googleMoreFragment"
-        android:name="org.microg.gms.ui.GoogleMoreFragment"
-        android:label="@string/gms_settings_name" />
-
-    <include app:graph="@navigation/nav_unlp" />
-    <include app:graph="@navigation/nav_nearby" />
 
     <fragment
         android:id="@+id/aboutFragment"
         android:name="org.microg.gms.ui.AboutFragment"
-        android:label="@string/prefcat_about"
-        tools:layout="@layout/about_root" />
+        android:label="@string/prefcat_about" />
 </navigation>

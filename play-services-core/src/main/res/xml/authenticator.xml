@@ -14,10 +14,11 @@
   ~ limitations under the License.
   -->
 
-<account-authenticator xmlns:android="http://schemas.android.com/apk/res/android"
+<account-authenticator
+    xmlns:android="http://schemas.android.com/apk/res/android"
     android:accountPreferences="@xml/preferences_auth"
-    android:accountType="com.google"
+    android:accountType="com.mgoogle"
     android:customTokens="true"
-    android:icon="@drawable/proprietary_auth_gls_ic_google_selected"
-    android:smallIcon="@drawable/proprietary_auth_gls_ic_google_minitab_selected"
-    android:label="@string/google_account_label" />
+    android:icon="@mipmap/ic_launcher"
+    android:smallIcon="@mipmap/ic_launcher"
+    android:label="@string/app_name" />

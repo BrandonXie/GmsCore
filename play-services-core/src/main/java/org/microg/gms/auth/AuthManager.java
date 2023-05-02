@@ -16,6 +16,10 @@
 
 package org.microg.gms.auth;
 
+import static android.content.pm.ApplicationInfo.FLAG_SYSTEM;
+import static android.content.pm.ApplicationInfo.FLAG_UPDATED_SYSTEM_APP;
+import static org.microg.gms.auth.AuthPrefs.isTrustGooglePermitted;
+
 import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.content.Context;
@@ -24,18 +28,14 @@ import android.os.Build;
 import android.util.Log;
 
 import org.microg.gms.common.PackageUtils;
-import org.microg.gms.settings.SettingsContract;
+import org.microg.mgms.settings.SettingsContract;
 
 import java.io.IOException;
-
-import static android.content.pm.ApplicationInfo.FLAG_SYSTEM;
-import static android.content.pm.ApplicationInfo.FLAG_UPDATED_SYSTEM_APP;
-import static org.microg.gms.auth.AuthPrefs.isTrustGooglePermitted;
 
 public class AuthManager {
 
     private static final String TAG = "GmsAuthManager";
-    public static final String PERMISSION_TREE_BASE = "com.google.android.googleapps.permission.GOOGLE_AUTH.";
+    public static final String PERMISSION_TREE_BASE = "com.mgoogle.android.googleapps.permission.GOOGLE_AUTH.";
     public static final String PREF_AUTH_VISIBLE = SettingsContract.Auth.VISIBLE;
     public static final int ONE_HOUR_IN_SECONDS = 60 * 60;
 
@@ -51,6 +51,17 @@ public class AuthManager {
     public AuthManager(Context context, String accountName, String packageName, String service) {
         this.context = context;
         this.accountName = accountName;
+        if (packageName.contains("youtube.music")) {
+            packageName = "com.google.android.apps.youtube.music";
+        } else if (packageName.contains("youtube.unplugged")) {
+            packageName = "com.google.android.apps.youtube.unplugged";
+        } else if (packageName.contains("youtube.tv")) {
+            packageName = "com.google.android.youtube.tv";
+        } else if (packageName.contains("youtube")) {
+            packageName = "com.google.android.youtube";
+        } else if (packageName.contains("apps.photos")) {
+            packageName = "com.google.android.apps.photos";
+        }
         this.packageName = packageName;
         this.service = service;
     }
@@ -106,10 +117,7 @@ public class AuthManager {
             }
         }
         String perm = getUserData(buildPermKey());
-        if (!"1".equals(perm)) {
-            return false;
-        }
-        return true;
+        return "1".equals(perm);
     }
 
     public void setExpiry(long expiry) {

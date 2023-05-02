@@ -17,12 +17,13 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 public class GoogleApiManager {
     private static GoogleApiManager instance;
-    private Context context;
-    private Map<ApiInstance, ApiClient> clientMap = new HashMap<>();
-    private Map<ApiInstance, List<WaitingApiCall<?>>> waitingApiCallMap = new HashMap<>();
+    private final Context context;
+    private final Map<ApiInstance, ApiClient> clientMap = new HashMap<>();
+    private final Map<ApiInstance, List<WaitingApiCall<?>>> waitingApiCallMap = new HashMap<>();
 
     private GoogleApiManager(Context context) {
         this.context = context;
@@ -52,7 +53,7 @@ public class GoogleApiManager {
         if (connected) {
             apiCall.execute(client, completionSource);
         } else {
-            waitingApiCallMap.get(new ApiInstance(api)).add(new WaitingApiCall<R>((PendingGoogleApiCall<R, ApiClient>) apiCall, completionSource));
+            waitingApiCallMap.get(new ApiInstance(api)).add(new WaitingApiCall<>((PendingGoogleApiCall<R, ApiClient>) apiCall, completionSource));
             if (!connecting) {
                 client.connect();
             }
@@ -80,7 +81,7 @@ public class GoogleApiManager {
     }
 
     private class ConnectionCallback implements ConnectionCallbacks {
-        private ApiInstance apiInstance;
+        private final ApiInstance apiInstance;
 
         public ConnectionCallback(ApiInstance apiInstance) {
             this.apiInstance = apiInstance;
@@ -98,7 +99,7 @@ public class GoogleApiManager {
     }
 
     private class ConnectionFailedListener implements OnConnectionFailedListener {
-        private ApiInstance apiInstance;
+        private final ApiInstance apiInstance;
 
         public ConnectionFailedListener(ApiInstance apiInstance) {
             this.apiInstance = apiInstance;
@@ -111,8 +112,8 @@ public class GoogleApiManager {
     }
 
     private static class WaitingApiCall<R> {
-        private PendingGoogleApiCall<R, ApiClient> apiCall;
-        private TaskCompletionSource<R> completionSource;
+        private final PendingGoogleApiCall<R, ApiClient> apiCall;
+        private final TaskCompletionSource<R> completionSource;
 
         public WaitingApiCall(PendingGoogleApiCall<R, ApiClient> apiCall, TaskCompletionSource<R> completionSource) {
             this.apiCall = apiCall;
@@ -134,8 +135,8 @@ public class GoogleApiManager {
 
             WaitingApiCall<?> that = (WaitingApiCall<?>) o;
 
-            if (apiCall != null ? !apiCall.equals(that.apiCall) : that.apiCall != null) return false;
-            return completionSource != null ? completionSource.equals(that.completionSource) : that.completionSource == null;
+            if (!Objects.equals(apiCall, that.apiCall)) return false;
+            return Objects.equals(completionSource, that.completionSource);
         }
 
         @Override
@@ -147,8 +148,8 @@ public class GoogleApiManager {
     }
 
     private static class ApiInstance {
-        private Class<?> apiClass;
-        private Api.ApiOptions apiOptions;
+        private final Class<?> apiClass;
+        private final Api.ApiOptions apiOptions;
 
         public ApiInstance(Class<?> apiClass, Api.ApiOptions apiOptions) {
             this.apiClass = apiClass;
@@ -166,8 +167,8 @@ public class GoogleApiManager {
 
             ApiInstance that = (ApiInstance) o;
 
-            if (apiClass != null ? !apiClass.equals(that.apiClass) : that.apiClass != null) return false;
-            return apiOptions != null ? apiOptions.equals(that.apiOptions) : that.apiOptions == null;
+            if (!Objects.equals(apiClass, that.apiClass)) return false;
+            return Objects.equals(apiOptions, that.apiOptions);
         }
 
         @Override

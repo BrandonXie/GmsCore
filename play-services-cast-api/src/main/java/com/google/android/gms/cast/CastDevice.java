@@ -16,8 +16,8 @@
 
 package com.google.android.gms.cast;
 
-import android.os.Bundle;
 import android.net.Uri;
+import android.os.Bundle;
 import android.text.TextUtils;
 
 import com.google.android.gms.common.images.WebImage;
@@ -27,7 +27,6 @@ import org.microg.safeparcel.AutoSafeParcelable;
 import org.microg.safeparcel.SafeParceled;
 
 import java.net.InetAddress;
-import java.net.Inet4Address;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -47,7 +46,7 @@ public class CastDevice extends AutoSafeParcelable {
         this.servicePort = port;
         this.deviceVersion = deviceVersion;
         this.friendlyName = friendlyName;
-        this.icons = new ArrayList<WebImage>();
+        this.icons = new ArrayList<>();
         this.icons.add(new WebImage(Uri.parse(String.format("http://%s:8008%s", this.address, iconPath))));
         this.modelName = modelName;
         this.capabilities = capabilities;
@@ -74,7 +73,7 @@ public class CastDevice extends AutoSafeParcelable {
     public static final int CAPABILITY_AUDIO_IN = 8;
 
     @SafeParceled(1)
-    private int versionCode = 3;
+    private final int versionCode = 3;
 
     @SafeParceled(2)
     private String deviceId;
@@ -184,11 +183,11 @@ public class CastDevice extends AutoSafeParcelable {
                 ", modelName=" + modelName +
                 ", deviceVersion=" + deviceVersion +
                 ", servicePort=" + servicePort +
-                (icons == null ? "" : (", icons=" + icons.toString())) +
+                (icons == null ? "" : (", icons=" + icons)) +
                 ", capabilities=" + capabilities +
                 ", status=" + status +
                 "}";
     }
 
-    public static Creator<CastDevice> CREATOR = new AutoCreator<CastDevice>(CastDevice.class);
+    public static Creator<CastDevice> CREATOR = new AutoCreator<>(CastDevice.class);
 }

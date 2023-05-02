@@ -5,8 +5,7 @@
   -->
 
 <layout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools">
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <data>
 
@@ -28,7 +27,7 @@
             layout="@layout/preference_switch_bar"
             app:callback="@{switchBarCallback}"
             app:checked="@{checkinEnabled}"
-            app:description='@{@string/checkin_enable_switch}'
+            app:description='@{@string/pref_switcher_title}'
             app:enabled="@{true}" />
 
         <androidx.fragment.app.FragmentContainerView

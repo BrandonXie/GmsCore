@@ -16,20 +16,17 @@
 
 package com.google.android.gms.cast.framework.internal;
 
-import android.content.Intent;
 import android.os.Bundle;
 import android.os.RemoteException;
 import android.util.Log;
 
 import com.google.android.gms.cast.CastDevice;
-import com.google.android.gms.cast.framework.ISession;
-import com.google.android.gms.dynamic.IObjectWrapper;
 import com.google.android.gms.dynamic.ObjectWrapper;
 
 public class MediaRouterCallbackImpl extends IMediaRouterCallback.Stub {
     private static final String TAG = MediaRouterCallbackImpl.class.getSimpleName();
 
-    private CastContextImpl castContext;
+    private final CastContextImpl castContext;
 
     public MediaRouterCallbackImpl(CastContextImpl castContext) {
         this.castContext = castContext;

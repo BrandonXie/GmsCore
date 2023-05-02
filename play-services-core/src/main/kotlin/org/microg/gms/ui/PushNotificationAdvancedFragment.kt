@@ -4,17 +4,18 @@
  */
 package org.microg.gms.ui
 
+import android.annotation.SuppressLint
 import android.os.Bundle
 import androidx.lifecycle.lifecycleScope
 import androidx.preference.ListPreference
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
-import androidx.preference.TwoStatePreference
-import com.google.android.gms.R
-import org.microg.gms.gcm.*
+import com.mgoogle.android.gms.R
+import org.microg.gms.gcm.GcmPrefs
+import org.microg.gms.gcm.getGcmServiceInfo
+import org.microg.gms.gcm.setGcmServiceConfiguration
 
 class PushNotificationAdvancedFragment : PreferenceFragmentCompat() {
-    private lateinit var confirmNewApps: TwoStatePreference
     private lateinit var networkMobile: ListPreference
     private lateinit var networkWifi: ListPreference
     private lateinit var networkRoaming: ListPreference
@@ -24,28 +25,18 @@ class PushNotificationAdvancedFragment : PreferenceFragmentCompat() {
         addPreferencesFromResource(R.xml.preferences_gcm_advanced)
     }
 
+    @SuppressLint("RestrictedApi")
     override fun onBindPreferences() {
-        confirmNewApps = preferenceScreen.findPreference(GcmPrefs.PREF_CONFIRM_NEW_APPS) ?: confirmNewApps
         networkMobile = preferenceScreen.findPreference(GcmPrefs.PREF_NETWORK_MOBILE) ?: networkMobile
         networkWifi = preferenceScreen.findPreference(GcmPrefs.PREF_NETWORK_WIFI) ?: networkWifi
         networkRoaming = preferenceScreen.findPreference(GcmPrefs.PREF_NETWORK_ROAMING) ?: networkRoaming
         networkOther = preferenceScreen.findPreference(GcmPrefs.PREF_NETWORK_OTHER) ?: networkOther
 
-        confirmNewApps.onPreferenceChangeListener = Preference.OnPreferenceChangeListener { _, newValue ->
-            val appContext = requireContext().applicationContext
-            lifecycleScope.launchWhenResumed {
-                if (newValue is Boolean) {
-                    setGcmServiceConfiguration(appContext, getGcmServiceInfo(appContext).configuration.copy(confirmNewApps = newValue))
-                }
-                updateContent()
-            }
-            true
-        }
         networkMobile.onPreferenceChangeListener = Preference.OnPreferenceChangeListener { _, newValue ->
             val appContext = requireContext().applicationContext
             lifecycleScope.launchWhenResumed {
                 (newValue as? String)?.toIntOrNull()?.let {
-                    setGcmServiceConfiguration(appContext, getGcmServiceInfo(appContext).configuration.copy(mobile = it))
+                    setGcmServiceConfiguration(requireContext(), getGcmServiceInfo(appContext).configuration.copy(mobile = it))
                 }
                 updateContent()
             }
@@ -55,7 +46,7 @@ class PushNotificationAdvancedFragment : PreferenceFragmentCompat() {
             val appContext = requireContext().applicationContext
             lifecycleScope.launchWhenResumed {
                 (newValue as? String)?.toIntOrNull()?.let {
-                    setGcmServiceConfiguration(appContext, getGcmServiceInfo(appContext).configuration.copy(wifi = it))
+                    setGcmServiceConfiguration(appContext, getGcmServiceInfo(requireContext()).configuration.copy(wifi = it))
                 }
                 updateContent()
             }
@@ -65,7 +56,7 @@ class PushNotificationAdvancedFragment : PreferenceFragmentCompat() {
             val appContext = requireContext().applicationContext
             lifecycleScope.launchWhenResumed {
                 (newValue as? String)?.toIntOrNull()?.let {
-                    setGcmServiceConfiguration(appContext, getGcmServiceInfo(appContext).configuration.copy(roaming = it))
+                    setGcmServiceConfiguration(appContext, getGcmServiceInfo(requireContext()).configuration.copy(roaming = it))
                 }
                 updateContent()
             }
@@ -75,7 +66,7 @@ class PushNotificationAdvancedFragment : PreferenceFragmentCompat() {
             val appContext = requireContext().applicationContext
             lifecycleScope.launchWhenResumed {
                 (newValue as? String)?.toIntOrNull()?.let {
-                    setGcmServiceConfiguration(appContext, getGcmServiceInfo(appContext).configuration.copy(other = it))
+                    setGcmServiceConfiguration(appContext, getGcmServiceInfo(requireContext()).configuration.copy(other = it))
                 }
                 updateContent()
             }
@@ -92,7 +83,6 @@ class PushNotificationAdvancedFragment : PreferenceFragmentCompat() {
         val appContext = requireContext().applicationContext
         lifecycleScope.launchWhenResumed {
             val serviceInfo = getGcmServiceInfo(appContext)
-            confirmNewApps.isChecked = serviceInfo.configuration.confirmNewApps
             networkMobile.value = serviceInfo.configuration.mobile.toString()
             networkMobile.summary = getSummaryString(serviceInfo.configuration.mobile, serviceInfo.learntMobileInterval)
             networkWifi.value = serviceInfo.configuration.wifi.toString()
@@ -105,15 +95,15 @@ class PushNotificationAdvancedFragment : PreferenceFragmentCompat() {
     }
 
     private fun getSummaryString(value: Int, learnt: Int): String = when (value) {
-        -1 -> "OFF"
-        0 -> "ON / Automatic: " + getHeartbeatString(learnt)
-        else -> "ON / Manual: " + getHeartbeatString(value * 60000)
+        -1 -> getString(R.string.service_status_disabled_short)
+        0 -> getString(R.string.service_status_enabled_short) + " / " + getString(R.string.gcm_status_pref_default) + ": " + getHeartbeatString(learnt)
+        else -> getString(R.string.service_status_enabled_short) + " / " + getString(R.string.gcm_status_pref_manual) + ": " + getHeartbeatString(value * GcmPrefs.INTERVAL)
     }
 
     private fun getHeartbeatString(heartbeatMs: Int): String {
         return if (heartbeatMs < 120000) {
-            (heartbeatMs / 1000).toString() + " seconds"
-        } else (heartbeatMs / 60000).toString() + " minutes"
+            (heartbeatMs / 1000).toString() + " " + getString(R.string.gcm_status_pref_sec)
+        } else (heartbeatMs / GcmPrefs.INTERVAL).toString() + " " + getString(R.string.gcm_status_pref_min)
     }
 
     companion object {

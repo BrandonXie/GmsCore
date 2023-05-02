@@ -27,7 +27,6 @@ import android.os.RemoteException;
 import android.util.Log;
 
 import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.internal.ConnectionInfo;
 import com.google.android.gms.common.internal.GetServiceRequest;
 import com.google.android.gms.common.internal.IGmsCallbacks;
 import com.google.android.gms.common.internal.IGmsServiceBroker;
@@ -45,7 +44,7 @@ public abstract class GmsClient<I extends IInterface> implements ApiClient {
     protected ConnectionState state = ConnectionState.NOT_CONNECTED;
     private ServiceConnection serviceConnection;
     private I serviceInterface;
-    private String actionString;
+    private final String actionString;
 
     protected int serviceId = -1;
     protected Account account = null;
@@ -111,7 +110,7 @@ public abstract class GmsClient<I extends IInterface> implements ApiClient {
 
     @Override
     public synchronized boolean isConnected() {
-        return state == ConnectionState.CONNECTED || state == ConnectionState.PSEUDO_CONNECTED;
+        return (state == ConnectionState.CONNECTED && serviceInterface != null && serviceInterface.asBinder().isBinderAlive() ) || state == ConnectionState.PSEUDO_CONNECTED;
     }
 
     @Override
@@ -177,16 +176,6 @@ public abstract class GmsClient<I extends IInterface> implements ApiClient {
             }
             Log.d(TAG, "GmsCallbacks : onPostInitComplete(" + serviceInterface + ")");
             callbacks.onConnected(params);
-        }
-
-        @Override
-        public void onAccountValidationComplete(int statusCode, Bundle params) throws RemoteException {
-            Log.d(TAG, "GmsCallbacks : onAccountValidationComplete");
-        }
-
-        @Override
-        public void onPostInitCompleteWithConnectionInfo(int statusCode, IBinder binder, ConnectionInfo info) throws RemoteException {
-            onPostInitComplete(statusCode, binder, info == null ? null : info.params);
         }
     }
 

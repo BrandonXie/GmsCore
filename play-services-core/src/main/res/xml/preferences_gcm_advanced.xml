@@ -17,12 +17,6 @@
 
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <SwitchPreference
-        android:defaultValue="false"
-        android:key="gcm_confirm_new_apps"
-        android:summary="@string/pref_gcm_confirm_new_apps_summary"
-        android:title="@string/pref_gcm_confirm_new_apps_title"/>
-
     <PreferenceCategory
         android:key="prefcat_networks"
         android:title="@string/prefcat_push_networks_title">
@@ -32,7 +26,7 @@
             android:entries="@array/gcm_network_config_names"
             android:entryValues="@array/gcm_network_config_values"
             android:key="gcm_network_mobile"
-            android:summary="ON / Automatic: 13 min"
+            android:summary="ON / Default: 60 sec"
             android:title="@string/network_type_mobile"/>
 
         <ListPreference
@@ -40,7 +34,7 @@
             android:entries="@array/gcm_network_config_names"
             android:entryValues="@array/gcm_network_config_values"
             android:key="gcm_network_wifi"
-            android:summary="ON / Manual: 30 min"
+            android:summary="ON / Manual: 2 min"
             android:title="@string/network_type_wifi"/>
 
         <ListPreference
@@ -56,7 +50,7 @@
             android:entries="@array/gcm_network_config_names"
             android:entryValues="@array/gcm_network_config_values"
             android:key="gcm_network_other"
-            android:summary="ON / Automatic: 30 min"
+            android:summary="ON / Default: 60 sec"
             android:title="@string/network_type_other"/>
 
     </PreferenceCategory>

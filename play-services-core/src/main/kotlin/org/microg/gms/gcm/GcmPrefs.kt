@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package org.microg.gms.gcm
 
 import android.content.Context
@@ -6,16 +8,13 @@ import android.net.ConnectivityManager
 import android.net.NetworkInfo
 import android.util.Log
 import org.microg.gms.gcm.TriggerReceiver.FORCE_TRY_RECONNECT
-import org.microg.gms.settings.SettingsContract
-import org.microg.gms.settings.SettingsContract.Gcm
-import org.microg.gms.settings.SettingsContract.setSettings
-import kotlin.math.max
-import kotlin.math.min
+import org.microg.mgms.settings.SettingsContract
+import org.microg.mgms.settings.SettingsContract.Gcm
+import org.microg.mgms.settings.SettingsContract.setSettings
 
 data class GcmPrefs(
     val isGcmLogEnabled: Boolean,
     val lastPersistedId: String?,
-    val confirmNewApps: Boolean,
     val gcmEnabled: Boolean,
     val networkMobile: Int,
     val networkWifi: Int,
@@ -32,14 +31,12 @@ data class GcmPrefs(
         get() = if (lastPersistedId.isNullOrEmpty()) emptyList() else lastPersistedId.split("\\|")
 
     companion object {
-        const val PREF_CONFIRM_NEW_APPS = Gcm.CONFIRM_NEW_APPS
         const val PREF_NETWORK_MOBILE = Gcm.NETWORK_MOBILE
         const val PREF_NETWORK_WIFI = Gcm.NETWORK_WIFI
         const val PREF_NETWORK_ROAMING = Gcm.NETWORK_ROAMING
         const val PREF_NETWORK_OTHER = Gcm.NETWORK_OTHER
 
-        private const val MIN_INTERVAL = 5 * 60 * 1000 // 5 minutes
-        private const val MAX_INTERVAL = 30 * 60 * 1000 // 30 minutes
+        public const val INTERVAL = 1 * 60 * 1000 // 1 minute
 
         @JvmStatic
         fun get(context: Context): GcmPrefs {
@@ -47,15 +44,14 @@ data class GcmPrefs(
                 GcmPrefs(
                     isGcmLogEnabled = c.getInt(0) != 0,
                     lastPersistedId = c.getString(1),
-                    confirmNewApps = c.getInt(2) != 0,
-                    gcmEnabled = c.getInt(3) != 0,
-                    networkMobile = c.getInt(4),
-                    networkWifi = c.getInt(5),
-                    networkRoaming = c.getInt(6),
-                    networkOther = c.getInt(7),
-                    learntMobileInterval = c.getInt(8),
-                    learntWifiInterval = c.getInt(9),
-                    learntOtherInterval = c.getInt(10),
+                    gcmEnabled = c.getInt(2) != 0,
+                    networkMobile = c.getInt(3),
+                    networkWifi = c.getInt(4),
+                    networkRoaming = c.getInt(5),
+                    networkOther = c.getInt(6),
+                    learntMobileInterval = c.getInt(7),
+                    learntWifiInterval = c.getInt(8),
+                    learntOtherInterval = c.getInt(9),
                 )
             }
         }
@@ -64,7 +60,6 @@ data class GcmPrefs(
             val gcmPrefs = get(context)
             setSettings(context, Gcm.getContentUri(context)) {
                 put(Gcm.ENABLE_GCM, config.enabled)
-                put(Gcm.CONFIRM_NEW_APPS, config.confirmNewApps)
                 put(Gcm.NETWORK_MOBILE, config.mobile)
                 put(Gcm.NETWORK_WIFI, config.wifi)
                 put(Gcm.NETWORK_ROAMING, config.roaming)
@@ -94,7 +89,6 @@ data class GcmPrefs(
         }
     }
 
-    @Suppress("DEPRECATION")
     fun getNetworkPrefForInfo(info: NetworkInfo?): String {
         if (info == null) return PREF_NETWORK_OTHER
         return if (info.isRoaming) PREF_NETWORK_ROAMING else when (info.type) {
@@ -104,20 +98,19 @@ data class GcmPrefs(
         }
     }
 
-    @Suppress("DEPRECATION")
     fun getHeartbeatMsFor(info: NetworkInfo?): Int {
         return getHeartbeatMsFor(getNetworkPrefForInfo(info))
     }
 
     fun getHeartbeatMsFor(pref: String): Int {
         return if (PREF_NETWORK_ROAMING == pref) {
-            if (networkRoaming != 0) networkRoaming * 60000 else learntMobileInterval
+            if (networkRoaming != 0) networkRoaming * GcmPrefs.INTERVAL else learntMobileInterval
         } else if (PREF_NETWORK_MOBILE == pref) {
-            if (networkMobile != 0) networkMobile * 60000 else learntMobileInterval
+            if (networkMobile != 0) networkMobile * GcmPrefs.INTERVAL else learntMobileInterval
         } else if (PREF_NETWORK_WIFI == pref) {
-            if (networkWifi != 0) networkWifi * 60000 else learntWifiInterval
+            if (networkWifi != 0) networkWifi * GcmPrefs.INTERVAL else learntWifiInterval
         } else {
-            if (networkOther != 0) networkOther * 60000 else learntOtherInterval
+            if (networkOther != 0) networkOther * GcmPrefs.INTERVAL else learntOtherInterval
         }
     }
 
@@ -126,15 +119,15 @@ data class GcmPrefs(
         when (pref) {
             PREF_NETWORK_MOBILE, PREF_NETWORK_ROAMING -> setSettings(context, Gcm.getContentUri(context)) {
                 val newInterval = (learntMobileInterval * 0.95).toInt()
-                put(Gcm.LEARNT_MOBILE, max(MIN_INTERVAL, min(newInterval, MAX_INTERVAL)))
+                put(Gcm.LEARNT_MOBILE, newInterval)
             }
             PREF_NETWORK_WIFI -> setSettings(context, Gcm.getContentUri(context)) {
-                val newInterval = (learntWifiInterval * 0.95).toInt()
-                put(Gcm.LEARNT_WIFI, max(MIN_INTERVAL, min(newInterval, MAX_INTERVAL)))
+                val newInterval = (learntMobileInterval * 0.95).toInt()
+                put(Gcm.LEARNT_WIFI, newInterval)
             }
             else -> setSettings(context, Gcm.getContentUri(context)) {
-                val newInterval = (learntOtherInterval * 0.95).toInt()
-                put(Gcm.LEARNT_OTHER, max(MIN_INTERVAL, min(newInterval, MAX_INTERVAL)))
+                val newInterval = (learntMobileInterval * 0.95).toInt()
+                put(Gcm.LEARNT_OTHER, newInterval)
             }
         }
     }
@@ -144,32 +137,28 @@ data class GcmPrefs(
         when (pref) {
             PREF_NETWORK_MOBILE, PREF_NETWORK_ROAMING -> {
                 if (time > learntMobileInterval / 4 * 3) {
-                    val newInterval = (learntMobileInterval * 1.02).toInt()
                     setSettings(context, Gcm.getContentUri(context)) {
-                        put(Gcm.LEARNT_MOBILE, max(MIN_INTERVAL, min(newInterval, MAX_INTERVAL)))
+                        put(Gcm.LEARNT_MOBILE, INTERVAL)
                     }
                 }
             }
             PREF_NETWORK_WIFI -> {
                 if (time > learntWifiInterval / 4 * 3) {
-                    val newInterval = (learntWifiInterval * 1.02).toInt()
                     setSettings(context, Gcm.getContentUri(context)) {
-                        put(Gcm.LEARNT_WIFI, max(MIN_INTERVAL, min(newInterval, MAX_INTERVAL)))
+                        put(Gcm.LEARNT_WIFI, INTERVAL)
                     }
                 }
             }
             else -> {
                 if (time > learntOtherInterval / 4 * 3) {
-                    val newInterval = (learntOtherInterval * 1.02).toInt()
                     setSettings(context, Gcm.getContentUri(context)) {
-                        put(Gcm.LEARNT_OTHER, max(MIN_INTERVAL, min(newInterval, MAX_INTERVAL)))
+                        put(Gcm.LEARNT_OTHER, INTERVAL)
                     }
                 }
             }
         }
     }
 
-    @Suppress("DEPRECATION")
     fun isEnabledFor(info: NetworkInfo?): Boolean {
         return isEnabled && info != null && getHeartbeatMsFor(info) >= 0
     }

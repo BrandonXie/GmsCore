@@ -1,6 +1,5 @@
 package org.microg.gms.ui;
 
-import android.content.Intent;
 import android.os.Bundle;
 
 import androidx.annotation.Nullable;
@@ -10,7 +9,7 @@ import androidx.navigation.fragment.NavHostFragment;
 import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
 
-import com.google.android.gms.R;
+import com.mgoogle.android.gms.R;
 
 public class SettingsActivity extends AppCompatActivity {
     private AppBarConfiguration appBarConfiguration;
@@ -22,10 +21,6 @@ public class SettingsActivity extends AppCompatActivity {
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        Intent intent = getIntent();
-        NearbyPreferencesIntegration.Companion.preProcessSettingsIntent(intent);
-
         setContentView(R.layout.settings_root_activity);
 
         appBarConfiguration = new AppBarConfiguration.Builder(getNavController().getGraph()).build();

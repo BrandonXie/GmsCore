@@ -14,7 +14,7 @@ import androidx.navigation.fragment.findNavController
 import androidx.preference.Preference
 import androidx.preference.PreferenceCategory
 import androidx.preference.PreferenceFragmentCompat
-import com.google.android.gms.R
+import com.mgoogle.android.gms.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.microg.gms.gcm.GcmDatabase
@@ -52,7 +52,7 @@ class PushNotificationAllAppsFragment : PreferenceFragmentCompat() {
     }
 
     private fun updateContent() {
-        val context = requireContext().applicationContext
+        val context = requireContext()
         lifecycleScope.launchWhenResumed {
             val apps = withContext(Dispatchers.IO) {
                 val res = database.appList.map { app ->
@@ -75,7 +75,7 @@ class PushNotificationAllAppsFragment : PreferenceFragmentCompat() {
                     pref.key = "pref_push_app_" + app.packageName
                     pref to (database.getRegistrationsByApp(app.packageName))
                 }.sortedBy {
-                    it.first.title.toString().toLowerCase()
+                    it.first.title.toString().lowercase()
                 }.mapIndexed { idx, pair ->
                     pair.first.order = idx
                     pair

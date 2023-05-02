@@ -26,13 +26,12 @@ import com.google.android.gms.common.api.Scope;
 import org.microg.gms.common.Constants;
 import org.microg.gms.common.GmsService;
 import org.microg.safeparcel.AutoSafeParcelable;
-import org.microg.safeparcel.SafeParceled;
 
 import java.util.Arrays;
 
 public class GetServiceRequest extends AutoSafeParcelable {
     @Field(1)
-    private int versionCode = 4;
+    private final int versionCode = 4;
     @Field(2)
     public final int serviceId;
     @Field(3)
@@ -57,6 +56,10 @@ public class GetServiceRequest extends AutoSafeParcelable {
     private boolean field12;
     @Field(13)
     private int field13;
+    @Field(14)
+    private boolean field14;
+    @Field(15)
+    private String field15;
 
     private GetServiceRequest() {
         serviceId = -1;

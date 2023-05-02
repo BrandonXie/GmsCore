@@ -20,7 +20,6 @@ import androidx.annotation.NonNull;
 
 import org.microg.gms.common.PublicApi;
 
-@SuppressWarnings({"deprecation", "DeprecatedIsStillUsed"})
 @PublicApi
 public class CommonStatusCodes {
     public static final int SUCCESS_CACHE = -1;

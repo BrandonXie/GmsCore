@@ -16,8 +16,8 @@ import android.view.ViewGroup
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
-import com.google.android.gms.R
-import com.google.android.gms.databinding.PushNotificationAppFragmentBinding
+import com.mgoogle.android.gms.R
+import com.mgoogle.android.gms.databinding.PushNotificationAppFragmentBinding
 
 
 class PushNotificationAppFragment : Fragment(R.layout.push_notification_fragment) {
@@ -34,7 +34,7 @@ class PushNotificationAppFragment : Fragment(R.layout.push_notification_fragment
                 val uri: Uri = Uri.fromParts("package", packageName, null)
                 intent.data = uri
                 try {
-                    requireContext().startActivity(intent)
+                    context!!.startActivity(intent)
                 } catch (e: Exception) {
                     Log.w(TAG, "Failed to launch app", e)
                 }
@@ -46,13 +46,13 @@ class PushNotificationAppFragment : Fragment(R.layout.push_notification_fragment
 
     override fun onResume() {
         super.onResume()
-        val appContext = requireContext().applicationContext
+        val context = requireContext()
         lifecycleScope.launchWhenResumed {
-            val pm = appContext.packageManager
+            val pm = context.packageManager
             val applicationInfo = pm.getApplicationInfoIfExists(packageName)
             binding.appName = applicationInfo?.loadLabel(pm)?.toString() ?: packageName
             binding.appIcon = applicationInfo?.loadIcon(pm)
-                    ?: AppCompatResources.getDrawable(appContext, android.R.mipmap.sym_def_app_icon)
+                    ?: AppCompatResources.getDrawable(context, android.R.mipmap.sym_def_app_icon)
         }
     }
 }

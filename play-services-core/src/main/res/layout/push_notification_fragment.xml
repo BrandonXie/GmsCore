@@ -5,8 +5,7 @@
   -->
 
 <layout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools">
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <data>
 
@@ -32,7 +31,7 @@
             layout="@layout/preference_switch_bar"
             app:callback="@{switchBarCallback}"
             app:checked="@{gcmEnabled}"
-            app:description='@{@string/gcm_enable_switch}'
+            app:description='@{@string/pref_gcm_switcher_title}'
             app:enabled="@{checkinEnabled}" />
 
         <androidx.fragment.app.FragmentContainerView

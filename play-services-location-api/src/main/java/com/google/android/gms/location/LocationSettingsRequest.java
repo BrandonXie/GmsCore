@@ -7,7 +7,6 @@ package com.google.android.gms.location;
 
 import org.microg.gms.common.PublicApi;
 import org.microg.safeparcel.AutoSafeParcelable;
-import org.microg.safeparcel.SafeParceled;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -16,7 +15,7 @@ import java.util.List;
 @PublicApi
 public class LocationSettingsRequest extends AutoSafeParcelable {
     @Field(1000)
-    private int versionCode = 2;
+    private final int versionCode = 2;
 
     @Field(value = 1, subClass = LocationRequest.class)
     @PublicApi(exclude = true)
@@ -48,7 +47,7 @@ public class LocationSettingsRequest extends AutoSafeParcelable {
      * A builder that builds {@link LocationSettingsRequest}.
      */
     public static class Builder {
-        private List<LocationRequest> requests = new ArrayList<LocationRequest>();
+        private final List<LocationRequest> requests = new ArrayList<LocationRequest>();
         private boolean alwaysShow = false;
         private boolean needBle = false;
 

@@ -5,7 +5,6 @@
   -->
 
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:title="Push notifications">
     <PreferenceCategory
@@ -14,7 +13,8 @@
         <Preference
             android:enabled="false"
             android:key="pref_push_apps_none"
-            android:title="@string/list_no_item_none" />
+            android:title="@string/list_no_item_none"
+            tools:isPreferenceVisible="true" />
         <Preference
             android:icon="@drawable/ic_expand_apps"
             android:key="pref_push_apps_all"
@@ -27,11 +27,11 @@
         <Preference
             android:key="pref_push_status"
             android:selectable="false"
-            android:title="@string/pref_info_status"
+            android:title="@string/prefcat_status_title"
             tools:summary="Connected since 15 minutes ago" />
     </PreferenceCategory>
     <PreferenceCategory android:layout="@layout/preference_category_no_label">
-        <org.microg.gms.ui.TextPreference
+        <Preference
             android:icon="@drawable/ic_info_outline"
             android:selectable="false"
             android:summary="@string/pref_gcm_enable_mcs_summary" />

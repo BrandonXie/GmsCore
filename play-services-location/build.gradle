@@ -16,28 +16,18 @@
 
 apply plugin: 'com.android.library'
 
-String getMyVersionName() {
-    def stdout = new ByteArrayOutputStream()
-    if (rootProject.file("gradlew").exists())
-        exec { commandLine 'git', 'describe', '--tags', '--always', '--dirty'; standardOutput = stdout }
-    else // automatic build system, don't tag dirty
-        exec { commandLine 'git', 'describe', '--tags', '--always'; standardOutput = stdout }
-    return stdout.toString().trim().substring(1)
-}
-
 android {
-    compileSdkVersion androidCompileSdk()
-    buildToolsVersion "$androidBuildVersionTools"
+    compileSdkVersion androidCompileSdk
+    buildToolsVersion "30.0.3"
 
     defaultConfig {
-        versionName getMyVersionName()
-        minSdkVersion androidMinSdk()
-        targetSdkVersion androidTargetSdk()
+        minSdkVersion androidMinSdk
+        targetSdkVersion androidTargetSdk
     }
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility = 1.8
+        targetCompatibility = 1.8
     }
 }
 
@@ -45,5 +35,5 @@ dependencies {
     api project(':play-services-base')
     api project(':play-services-location-api')
 
-    implementation 'androidx.annotation:annotation:1.1.0'
+    implementation 'androidx.annotation:annotation:1.3.0'
 }

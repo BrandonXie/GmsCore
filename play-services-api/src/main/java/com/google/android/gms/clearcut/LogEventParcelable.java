@@ -18,22 +18,22 @@ package com.google.android.gms.clearcut;
 
 import android.util.Base64;
 
-import com.google.android.gms.phenotype.ExperimentToken;
-import com.google.android.gms.phenotype.GenericDimension;
-import com.google.android.gms.playlog.internal.PlayLoggerContext;
+import com.google.android.gms.clearcut.internal.LogVerifierResultParcelable;
+import com.google.android.gms.clearcut.internal.PlayLoggerContext;
+import com.mgoogle.android.gms.phenotype.ExperimentToken;
+import com.mgoogle.android.gms.phenotype.GenericDimension;
 
 import org.microg.safeparcel.AutoSafeParcelable;
-import org.microg.safeparcel.SafeParceled;
 
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
-import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 public class LogEventParcelable extends AutoSafeParcelable {
     @Field(1)
-    private int versionCode = 1;
+    private final int versionCode = 1;
 
     @Field(2)
     public final PlayLoggerContext context;
@@ -62,6 +62,9 @@ public class LogEventParcelable extends AutoSafeParcelable {
     @Field(10)
     public final GenericDimension[] genericDimensions;
 
+    @Field(11)
+    public final LogVerifierResultParcelable logVerifierResult;
+
     private LogEventParcelable() {
         context = null;
         bytes = null;
@@ -71,6 +74,7 @@ public class LogEventParcelable extends AutoSafeParcelable {
         addPhenotypeExperimentTokens = false;
         experimentTokenParcelables = null;
         genericDimensions = null;
+        logVerifierResult = null;
     }
 
     public LogEventParcelable(PlayLoggerContext context, byte[] bytes, int[] testCodes, String[] mendelPackages, int[] experimentIds, byte[][] experimentTokens, boolean addPhenotypeExperimentTokens) {
@@ -83,6 +87,7 @@ public class LogEventParcelable extends AutoSafeParcelable {
         this.addPhenotypeExperimentTokens = addPhenotypeExperimentTokens;
         this.experimentTokenParcelables = null;
         this.genericDimensions = null;
+        this.logVerifierResult = null;
     }
 
     @Override
@@ -104,7 +109,7 @@ public class LogEventParcelable extends AutoSafeParcelable {
     private String getBytesAsString() {
         if (bytes == null) return "null";
         try {
-            CharsetDecoder d = Charset.forName("US-ASCII").newDecoder();
+            CharsetDecoder d = StandardCharsets.US_ASCII.newDecoder();
             CharBuffer r = d.decode(ByteBuffer.wrap(bytes));
             return r.toString();
         } catch (Exception e) {

@@ -16,11 +16,12 @@
 
 package org.microg.gms.checkin;
 
+import static org.microg.gms.checkin.CheckinPrefs.isSpoofingEnabled;
+
 import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.content.ContentResolver;
 import android.content.Context;
-import android.preference.PreferenceManager;
 
 import org.microg.gms.auth.AuthConstants;
 import org.microg.gms.auth.AuthRequest;
@@ -34,6 +35,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class CheckinManager {
+    private static final String TAG = "GmsCheckinManager";
     private static final long MIN_CHECKIN_INTERVAL = 3 * 60 * 60 * 1000; // 3 hours
 
     @SuppressWarnings("MissingPermission")
@@ -43,7 +45,7 @@ public class CheckinManager {
             return null;
         if (!CheckinPrefs.isEnabled(context))
             return null;
-        List<CheckinClient.Account> accounts = new ArrayList<CheckinClient.Account>();
+        List<CheckinClient.Account> accounts = new ArrayList<>();
         AccountManager accountManager = AccountManager.get(context);
         String accountType = AuthConstants.DEFAULT_ACCOUNT_TYPE;
         for (Account account : accountManager.getAccountsByType(accountType)) {
@@ -56,9 +58,10 @@ public class CheckinManager {
                 accounts.add(new CheckinClient.Account(account.name, token));
             }
         }
-        CheckinRequest request = CheckinClient.makeRequest(Utils.getBuild(context),
+        CheckinRequest request = CheckinClient.makeRequest(context,
                 new DeviceConfiguration(context), Utils.getDeviceIdentifier(context),
-                Utils.getPhoneInfo(context), info, Utils.getLocale(context), accounts);
+                Utils.getPhoneInfo(context), info, Utils.getLocale(context), accounts,
+                isSpoofingEnabled(context));
         return handleResponse(context, CheckinClient.request(request));
     }
 

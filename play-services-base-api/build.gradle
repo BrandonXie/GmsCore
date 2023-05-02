@@ -15,8 +15,6 @@
  */
 
 apply plugin: 'com.android.library'
-apply plugin: 'maven-publish'
-apply plugin: 'signing'
 
 dependencies {
     api project(':play-services-basement')
@@ -24,14 +22,13 @@ dependencies {
 
 android {
     compileSdkVersion androidCompileSdk
-    buildToolsVersion "$androidBuildVersionTools"
+    buildToolsVersion "30.0.3"
 
     aidlPackageWhiteList "com/google/android/gms/common/data/DataHolder.aidl"
     aidlPackageWhiteList "com/google/android/gms/common/images/WebImage.aidl"
     aidlPackageWhiteList "com/google/android/gms/common/api/internal/IStatusCallback.aidl"
 
     defaultConfig {
-        versionName version
         minSdkVersion androidMinSdk
         targetSdkVersion androidTargetSdk
     }
@@ -41,7 +38,3 @@ android {
         targetCompatibility = 1.8
     }
 }
-
-apply from: '../gradle/publish-android.gradle'
-
-description = 'microG API for play-services-base'

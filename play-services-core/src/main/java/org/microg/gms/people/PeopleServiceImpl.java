@@ -16,11 +16,9 @@
 
 package org.microg.gms.people;
 
-import android.Manifest;
 import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.content.Context;
-import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.os.Parcel;
@@ -52,9 +50,7 @@ public class PeopleServiceImpl extends IPeopleService.Stub {
     @Override
     public void loadOwners(final IPeopleCallbacks callbacks, boolean var2, boolean var3, final String accountName, String var5, int sortOrder) {
         Log.d(TAG, "loadOwners: " + var2 + ", " + var3 + ", " + accountName + ", " + var5 + ", " + sortOrder);
-        if (context.checkCallingPermission(Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) {
-            PackageUtils.assertExtendedAccess(context);
-        }
+
         AccountManager accountManager = AccountManager.get(context);
         Bundle accountMetadata = new Bundle();
         String accountType = AuthConstants.DEFAULT_ACCOUNT_TYPE;
@@ -120,23 +116,20 @@ public class PeopleServiceImpl extends IPeopleService.Stub {
     public ICancelToken loadOwnerAvatar(final IPeopleCallbacks callbacks, final String account, String pageId, int size, int flags) {
         Log.d(TAG, "loadOwnerAvatar: " + account + ", " + pageId + ", " + size + ", " + flags);
         PackageUtils.assertExtendedAccess(context);
-        final Thread thread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                Bundle extras = new Bundle();
-                extras.putBoolean("rewindable", false);
-                extras.putInt("width", 0);
-                extras.putInt("height", 0);
-                File avaterFile = PeopleManager.getOwnerAvatarFile(context, account, true);
-                try {
-                    ParcelFileDescriptor fileDescriptor = null;
-                    if (avaterFile != null) {
-                        fileDescriptor = ParcelFileDescriptor.open(avaterFile, ParcelFileDescriptor.MODE_READ_ONLY);
-                    }
-                    callbacks.onParcelFileDescriptor(0, extras, fileDescriptor, extras);
-                } catch (Exception e) {
-                    Log.w(TAG, e);
+        final Thread thread = new Thread(() -> {
+            Bundle extras = new Bundle();
+            extras.putBoolean("rewindable", false);
+            extras.putInt("width", 0);
+            extras.putInt("height", 0);
+            File avaterFile = PeopleManager.getOwnerAvatarFile(context, account, true);
+            try {
+                ParcelFileDescriptor fileDescriptor = null;
+                if (avaterFile != null) {
+                    fileDescriptor = ParcelFileDescriptor.open(avaterFile, ParcelFileDescriptor.MODE_READ_ONLY);
                 }
+                callbacks.onParcelFileDescriptor(0, extras, fileDescriptor, extras);
+            } catch (Exception e) {
+                Log.w(TAG, e);
             }
         });
         thread.start();

@@ -4,39 +4,9 @@
  */
 
 buildscript {
-    ext.cronetVersion = '91.0.4472.120.1'
-    ext.nlpVersion = '2.0-alpha6'
-    ext.remoteDroidGuardVersion = '0.1.2'
-    ext.safeParcelVersion = '1.7.0'
-    ext.wearableVersion = '0.1.1'
-
-    ext.kotlinVersion = '1.4.32'
-    ext.coroutineVersion = '1.3.8'
-
-    ext.annotationVersion = '1.2.0'
-    ext.appcompatVersion = '1.2.0'
-    ext.coreVersion = '1.3.0'
-    ext.fragmentVersion = '1.2.5'
-    ext.lifecycleVersion = '2.3.1'
-    ext.mediarouterVersion = '1.2.2'
-    ext.multidexVersion = '2.0.1'
-    ext.navigationVersion = '2.3.5'
-    ext.preferenceVersion = '1.1.1'
-    ext.recyclerviewVersion = '1.1.0'
-    ext.webkitVersion = '1.4.0'
-
-    ext.supportLibraryVersion = '28.0.0'
-    ext.slf4jVersion = '1.7.25'
-    ext.volleyVersion = '1.2.0'
-    ext.wireVersion = '3.2.2'
-
-    ext.androidBuildGradleVersion = '4.1.0'
-
-    ext.androidBuildVersionTools = '30.0.2'
-
-    ext.androidMinSdk = 14
-    ext.androidTargetSdk = 29
-    ext.androidCompileSdk = 30
+    ext.androidMinSdk = 23
+    ext.androidTargetSdk = 30
+    ext.androidCompileSdk = 31
 
     repositories {
         jcenter()
@@ -44,70 +14,19 @@ buildscript {
     }
 
     dependencies {
-        classpath "com.android.tools.build:gradle:$androidBuildGradleVersion"
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion"
-        classpath "com.squareup.wire:wire-gradle-plugin:$wireVersion"
+        classpath 'com.android.tools.build:gradle:7.1.2'
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.6.10"
+        classpath "com.squareup.wire:wire-gradle-plugin:3.2.2"
     }
 }
-
-def execResult(...args) {
-    def stdout = new ByteArrayOutputStream()
-    exec {
-        commandLine args
-        standardOutput = stdout
-    }
-    return stdout.toString().trim()
-}
-
-def gmsVersion = "21.45.16"
-def gmsVersionCode = Integer.parseInt(gmsVersion.replaceAll('\\.', ''))
-def gitVersionBase = execResult('git', 'describe', '--tags', '--abbrev=0', '--match=v[0-9]*').substring(1)
-def gitCommitCount = Integer.parseInt(execResult('git', 'rev-list', '--count', "v$gitVersionBase..HEAD"))
-def gitCommitId = execResult('git', 'show-ref', '--abbrev=7', '--head', 'HEAD').split(' ')[0]
-def gitDirty = execResult('git', 'status', '--porcelain').size() > 0
-def ourVersionBase = gitVersionBase.substring(0, gitVersionBase.lastIndexOf('.'))
-def ourVersionMinor = Integer.parseInt(ourVersionBase.substring(ourVersionBase.lastIndexOf('.') + 1))
-def ourVersionCode = gmsVersionCode * 1000 + ourVersionMinor * 2  + (gitCommitCount > 0 || gitDirty ? 1 : 0)
-def ourVersionName = "$ourVersionBase.$gmsVersionCode" + (gitCommitCount > 0 && !gitDirty ? "-$gitCommitCount" : "") + (gitDirty ? "-dirty" : "") + (gitCommitCount > 0 && !gitDirty ? " ($gitCommitId)" : "")
-logger.lifecycle('Starting build for version {} ({})...', ourVersionName, ourVersionCode)
-
-@Deprecated
-String getMyVersionName() {
-    return ourVersionName
-}
-
-@Deprecated
-int getMyVersionCode() {
-    return ourVersionCode
-}
-
 
 allprojects {
     apply plugin: 'idea'
 
     group = 'org.microg.gms'
-    version = ourVersionName
-    ext.appVersionCode = ourVersionCode
+    version = "0.2.24.220220"
+    ext.appVersionCode = 220220001
     ext.isReleaseVersion = false
-}
-
-@Deprecated
-def androidCompileSdk() { return androidCompileSdk }
-
-@Deprecated
-def androidTargetSdk() { return androidTargetSdk }
-
-@Deprecated
-def androidMinSdk() { return androidMinSdk }
-
-@Deprecated
-def versionCode() {
-    return ourVersionCode
-}
-
-@Deprecated
-def versionName() {
-    return ourVersionName
 }
 
 subprojects {
@@ -116,4 +35,3 @@ subprojects {
         google()
     }
 }
-

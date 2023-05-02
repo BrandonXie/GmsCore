@@ -16,16 +16,9 @@
 
 package org.microg.gms.cast;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-
 import android.content.Context;
-import android.net.Uri;
 import android.os.Bundle;
-import android.os.Parcel;
 import android.os.RemoteException;
-import android.util.Base64;
 import android.util.Log;
 
 import com.google.android.gms.cast.ApplicationMetadata;
@@ -37,21 +30,20 @@ import com.google.android.gms.cast.LaunchOptions;
 import com.google.android.gms.cast.internal.ICastDeviceController;
 import com.google.android.gms.cast.internal.ICastDeviceControllerListener;
 import com.google.android.gms.common.api.CommonStatusCodes;
-import com.google.android.gms.common.api.Status;
-import com.google.android.gms.common.images.WebImage;
 import com.google.android.gms.common.internal.BinderWrapper;
-import com.google.android.gms.common.internal.GetServiceRequest;
+
+import java.io.IOException;
+import java.util.ArrayList;
 
 import su.litvak.chromecast.api.v2.Application;
 import su.litvak.chromecast.api.v2.ChromeCast;
-import su.litvak.chromecast.api.v2.Namespace;
-import su.litvak.chromecast.api.v2.ChromeCastConnectionEventListener;
-import su.litvak.chromecast.api.v2.ChromeCastSpontaneousEventListener;
-import su.litvak.chromecast.api.v2.ChromeCastRawMessageListener;
 import su.litvak.chromecast.api.v2.ChromeCastConnectionEvent;
-import su.litvak.chromecast.api.v2.ChromeCastSpontaneousEvent;
+import su.litvak.chromecast.api.v2.ChromeCastConnectionEventListener;
 import su.litvak.chromecast.api.v2.ChromeCastRawMessage;
-import su.litvak.chromecast.api.v2.AppEvent;
+import su.litvak.chromecast.api.v2.ChromeCastRawMessageListener;
+import su.litvak.chromecast.api.v2.ChromeCastSpontaneousEvent;
+import su.litvak.chromecast.api.v2.ChromeCastSpontaneousEventListener;
+import su.litvak.chromecast.api.v2.Namespace;
 
 public class CastDeviceControllerImpl extends ICastDeviceController.Stub implements
     ChromeCastConnectionEventListener,
@@ -61,9 +53,9 @@ public class CastDeviceControllerImpl extends ICastDeviceController.Stub impleme
 {
     private static final String TAG = "GmsCastDeviceController";
 
-    private Context context;
-    private String packageName;
-    private CastDevice castDevice;
+    private final Context context;
+    private final String packageName;
+    private final CastDevice castDevice;
     boolean notificationEnabled;
     long castFlags;
     ICastDeviceControllerListener listener;
@@ -107,8 +99,8 @@ public class CastDeviceControllerImpl extends ICastDeviceController.Stub impleme
         metadata.name = app.name;
         Log.d(TAG, "unimplemented: ApplicationMetadata.images");
         Log.d(TAG, "unimplemented: ApplicationMetadata.senderAppLaunchUri");
-        metadata.images = new ArrayList<WebImage>();
-        metadata.namespaces = new ArrayList<String>();
+        metadata.images = new ArrayList<>();
+        metadata.namespaces = new ArrayList<>();
         for(Namespace namespace : app.namespaces) {
             metadata.namespaces.add(namespace.name);
         }
@@ -119,8 +111,6 @@ public class CastDeviceControllerImpl extends ICastDeviceController.Stub impleme
     @Override
     public void spontaneousEventReceived(ChromeCastSpontaneousEvent event) {
         switch (event.getType()) {
-            case MEDIA_STATUS:
-                break;
             case STATUS:
                 su.litvak.chromecast.api.v2.Status status = (su.litvak.chromecast.api.v2.Status)event.getData();
                 Application app = status.getRunningApp();
@@ -132,11 +122,11 @@ public class CastDeviceControllerImpl extends ICastDeviceController.Stub impleme
                 int standbyState = status.standBy ? 1 : 0;
                 this.onDeviceStatusChanged(new CastDeviceStatus(status.volume.level, status.volume.muted, activeInputState, metadata, standbyState));
                 break;
-            case APPEVENT:
-                break;
             case CLOSE:
                 this.onApplicationDisconnected(CommonStatusCodes.SUCCESS);
                 break;
+            case MEDIA_STATUS:
+            case APPEVENT:
             default:
                 break;
         }
@@ -147,12 +137,10 @@ public class CastDeviceControllerImpl extends ICastDeviceController.Stub impleme
         switch (message.getPayloadType()) {
             case STRING:
                 String response = message.getPayloadUtf8();
-                if (requestId == null) {
-                    this.onTextMessageReceived(message.getNamespace(), response);
-                } else {
+                if (requestId != null) {
                     this.onSendMessageSuccess(response, requestId);
-                    this.onTextMessageReceived(message.getNamespace(), response);
                 }
+                this.onTextMessageReceived(message.getNamespace(), response);
                 break;
             case BINARY:
                 byte[] payload = message.getPayloadBinary();
@@ -167,7 +155,6 @@ public class CastDeviceControllerImpl extends ICastDeviceController.Stub impleme
             this.chromecast.disconnect();
         } catch (IOException e) {
             Log.e(TAG, "Error disconnecting chromecast: " + e.getMessage());
-            return;
         }
     }
 
@@ -178,7 +165,6 @@ public class CastDeviceControllerImpl extends ICastDeviceController.Stub impleme
         } catch (IOException e) {
             Log.w(TAG, "Error sending cast message: " + e.getMessage());
             this.onSendMessageFailure("", requestId, CommonStatusCodes.NETWORK_ERROR);
-            return;
         }
     }
 

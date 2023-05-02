@@ -17,18 +17,12 @@
 package com.google.android.gms.chimera.container;
 
 import android.content.Context;
-import android.content.ContextWrapper;
-import android.content.pm.PackageManager;
 import android.os.RemoteException;
 import android.util.Log;
 
 import com.google.android.gms.dynamic.IObjectWrapper;
 import com.google.android.gms.dynamic.ObjectWrapper;
 import com.google.android.gms.dynamite.IDynamiteLoader;
-
-import org.microg.gms.common.Constants;
-
-import java.lang.reflect.Field;
 
 public class DynamiteLoaderImpl extends IDynamiteLoader.Stub {
     private static final String TAG = "GmsDynamiteLoaderImpl";
@@ -76,10 +70,6 @@ public class DynamiteLoaderImpl extends IDynamiteLoader.Stub {
             Log.w(TAG, "No such module known: " + moduleId);
         }
 
-        if (moduleId.equals("com.google.android.gms.firebase_database")) {
-            Log.d(TAG, "returning temp fix module version for " + moduleId + ". Firebase Database will not be functional!");
-            return com.google.android.gms.dynamite.descriptors.com.google.android.gms.firebase_database.ModuleDescriptor.MODULE_VERSION;
-        }
         if (moduleId.equals("com.google.android.gms.googlecertificates")) {
             return com.google.android.gms.dynamite.descriptors.com.google.android.gms.googlecertificates.ModuleDescriptor.MODULE_VERSION;
         }
